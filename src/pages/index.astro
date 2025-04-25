@@ -1,8 +1,9 @@
 ---
 import { getPlaceHolderImage } from '@/utils/image-placeholder';
+import Layout from '../layouts/Layout.astro';
 ---
 
-<div>
+<Layout>
   <div class="transform-3d">
     <div class="translate-z-0.5">
       <img src={getPlaceHolderImage()} />
@@ -14,4 +15,4 @@ import { getPlaceHolderImage } from '@/utils/image-placeholder';
       <img src={getPlaceHolderImage()} />
     </div>
   </div>
-</div>
+</Layout>

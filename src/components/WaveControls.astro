@@ -1,0 +1,42 @@
+---
+import Button from './ui/Button.astro';
+import Select from './ui/Select.astro';
+import Range from './ui/Range.astro';
+import ColorPicker from './ui/ColorPicker.astro';
+
+const waveTypeOptions = [
+  { value: 'organic', label: 'Organic Wave' },
+  { value: 'square', label: 'Square Wave' },
+  { value: 'triangular', label: 'Triangular Wave' },
+];
+
+const waveDirectionOptions = [
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'top', label: 'Top' },
+];
+---
+
+<div class="flex flex-wrap items-center justify-center gap-4">
+  <Select id="wave-type" label="Wave Type:" options={waveTypeOptions} />
+
+  <Select
+    id="wave-dir"
+    label="Wave Direction:"
+    options={waveDirectionOptions}
+  />
+
+  <Range
+    id="points-slider"
+    label="Points: "
+    min={4}
+    max={30}
+    value={12}
+    valueDisplay="points-value"
+  />
+
+  <ColorPicker id="color-picker" label="Color:" value="#0099ff" />
+
+  <div class="mb-1 self-end">
+    <Button id="randomize-btn">Randomize Wave</Button>
+  </div>
+</div>

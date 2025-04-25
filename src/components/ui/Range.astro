@@ -1,0 +1,30 @@
+---
+interface Props {
+  id?: string;
+  label?: string;
+  min?: number;
+  max?: number;
+  value?: number;
+  className?: string;
+  valueDisplay?: string;
+}
+
+const { id, label, min = 0, max = 100, value = 50, className = "", valueDisplay } = Astro.props;
+---
+
+<div class="flex flex-col gap-1.5">
+  {label && (
+    <label for={id} class="text-sm text-gray-600">
+      {label}
+      {valueDisplay && <span id={valueDisplay}>{value}</span>}
+    </label>
+  )}
+  <input
+    type="range"
+    id={id}
+    min={min}
+    max={max}
+    value={value}
+    class={`w-40 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500 ${className}`}
+  />
+</div>

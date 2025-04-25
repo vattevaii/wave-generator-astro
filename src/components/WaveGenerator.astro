@@ -1,0 +1,328 @@
+---
+// Initial values for server-side rendering
+const initialWave =
+  'M0,64L48,58.7C96,53,192,43,288,85.3C384,128,480,224,576,229.3C672,235,768,149,864,149.3C960,149,1056,235,1152,272C1248,309,1344,299,1392,293.3L1440,288L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z';
+const initialColor = '#0099ff';
+const initialOpacity = '0.7';
+---
+
+<div class="wave-container">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" id="wave-svg">
+    <path
+      id="wave-path"
+      fill={initialColor}
+      fill-opacity={initialOpacity}
+      d={initialWave}></path>
+  </svg>
+</div>
+
+<style>
+  .wave-container {
+    position: relative;
+    display: flex;
+    overflow: clip;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .wave-container:before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: -50%;
+    animation: move-wave 10s ease-out infinite;
+    background-image: linear-gradient(
+      to right,
+      transparent 20%,
+      rgba(255, 255, 255, 0.8) 50%,
+      transparent 80%
+    );
+    mix-blend-mode: soft-light;
+  }
+
+  @keyframes move-wave {
+    0% {
+      left: -100%;
+    }
+    90% {
+      left: 100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  #wave-path {
+    transition: all ease-in-out 2s;
+  }
+</style>
+
+<script>
+  const randomBetween = (min, max) =>
+    Math.floor(Math.random() * (max - min + 1) + min);
+
+  // Common parameters for all wave types
+  const width = 1440;
+  const height = 320;
+
+  // Store the current coordinates globally so they can be reused
+  let currentCoords = [];
+
+  /**
+   * Generate coordinates for the wave
+   * @param {number} numPoints - Number of points to generate
+   * @returns {[number, number][]} Array of [x, y] coordinates
+   */
+  const generateCoordinates = (numPoints) => {
+    /**
+     * An array representing coordinates.
+     * @type {[number, number][]}
+     */
+    const coords = [];
+    const step = width / (numPoints - 1);
+    // Use full height range (0 to 100%)
+    const yMin = 0;
+    const yMax = height - 1; // -1 to avoid going exactly to the edge
+
+    for (let i = 0; i < numPoints; i++) {
+      const x = i * step;
+      const y = randomBetween(yMin, yMax);
+      coords.push([x, y]);
+    }
+
+    // Store the coordinates globally
+    currentCoords = [...coords];
+    return coords;
+  };
+
+  /**
+   * Generate an organic wave with smooth curves
+   * @param {[number, number][]} coords - Array of coordinates
+   * @param {number} numPoints - Number of points
+   * @returns {string} SVG path data
+   */
+  const generateOrganicWave = (coords, numPoints) => {
+    const step = width / (numPoints - 1);
+
+    // Build path with smooth cubic Bezier curves
+    let d = '';
+
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [x1, y1] = coords[i];
+      const [x2, y2] = coords[i + 1];
+      const cp1x = x1 + step / 2;
+      const cp1y = y1;
+      const cp2x = x2 - step / 2;
+      const cp2y = y2;
+      d += `C${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2} `;
+    }
+    return d;
+  };
+
+  /**
+   * Generate a square wave
+   * @param {[number, number][]} coords - Array of coordinates
+   * @returns {string} SVG path data
+   */
+  const generateSquareWave = (coords) => {
+    // Build path with vertical and horizontal lines
+    let d = '';
+
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [x1, y1] = coords[i];
+      const [x2, y2] = coords[i + 1];
+      // Create a square wave by adding a vertical line followed by a horizontal line
+      d += `V${y2} H${x2} `;
+    }
+
+    // Close the wave
+
+    return d;
+  };
+
+  /**
+   * Generate a triangular wave
+   * @param {[number, number][]} coords - Array of coordinates
+   * @returns {string} SVG path data
+   */
+  const generateTriangularWave = (coords) => {
+    // Build path with straight lines (linear segments)
+    let d = '';
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [x2, y2] = coords[i + 1];
+      // Create a triangular wave by adding straight lines between points
+      d += `L${x2},${y2} `;
+    }
+
+    return d;
+  };
+
+  /**
+   * Generate a wave based on the selected type
+   * @param {boolean} regenerateCoords - Whether to generate new coordinates or use existing ones
+   * @returns {string} SVG path data
+   */
+  const generateWave = (regenerateCoords = true) => {
+    const waveDir = document.getElementById('wave-dir')?.value || 'bottom';
+    const waveType = document.getElementById('wave-type')?.value || 'organic';
+    const pointsSlider = document.getElementById('points-slider');
+    const numPoints = pointsSlider ? parseInt(pointsSlider.value) : 12;
+
+    // Generate coordinates or use existing ones
+    const coords = regenerateCoords
+      ? generateCoordinates(numPoints)
+      : currentCoords;
+
+    // If we don't have coordinates yet or the number of points has changed, generate new ones
+    if (coords.length === 0 || coords.length !== numPoints) {
+      return generateWave(true); // Regenerate with new coordinates
+    }
+
+    let d = `M0,${coords[0][1]} `;
+
+    switch (waveType) {
+      case 'square':
+        d += generateSquareWave(coords);
+        break;
+      case 'triangular':
+        d += generateTriangularWave(coords);
+        break;
+      case 'organic':
+      default:
+        d += generateOrganicWave(coords, numPoints);
+    }
+    if (waveDir === 'top') {
+      d += `L${width},0 L0,0 L0,${height} Z`;
+    } else {
+      d += `L${width},${height} L0,${height} L0,${height} Z`;
+    }
+    return d;
+  };
+
+  const colors = [
+    '#0099ff',
+    '#00cca0',
+    '#ff6b6b',
+    '#9775fa',
+    '#ffa94d',
+    '#748ffc',
+  ];
+  const getRandomColor = () =>
+    colors[Math.floor(Math.random() * colors.length)];
+  const getRandomOpacity = () => (Math.random() * 0.5 + 0.5).toFixed(1);
+
+  /**
+   * Randomize the wave with current settings
+   * @param {boolean} useRandomColor - Whether to use a random color or the color picker value
+   * @param {boolean} regenerateCoords - Whether to generate new coordinates or use existing ones
+   */
+  const randomizeWave = (useRandomColor = true, regenerateCoords = true) => {
+    const wavePath = document.getElementById('wave-path');
+    const colorPicker = document.getElementById('color-picker');
+
+    if (!wavePath) return;
+
+    // Update the wave path
+    wavePath.setAttribute('d', generateWave(regenerateCoords));
+
+    // Set the color - either random or from the color picker
+    if (useRandomColor) {
+      const randomColor = getRandomColor();
+      wavePath.setAttribute('fill', randomColor);
+      // Update the color picker to match the random color
+      if (colorPicker) {
+        colorPicker.value = randomColor;
+      }
+    } else if (colorPicker) {
+      wavePath.setAttribute('fill', colorPicker.value);
+    }
+
+    // Set the opacity
+    if (regenerateCoords) {
+      wavePath.setAttribute('fill-opacity', getRandomOpacity());
+    }
+  };
+
+  let lastRandomizeTime = 0;
+  const RANDOMIZE_INTERVAL = 2000; // 2 seconds in milliseconds
+
+  const animateWave = (timestamp) => {
+    // Check if 5 seconds have passed since the last randomization
+    if (
+      !lastRandomizeTime ||
+      timestamp - lastRandomizeTime >= RANDOMIZE_INTERVAL
+    ) {
+      randomizeWave(true, true); // Use random color and regenerate coords for automatic updates
+      lastRandomizeTime = timestamp;
+    }
+
+    // Continue the animation loop
+    requestAnimationFrame(animateWave);
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // Initialize the points display
+    updatePointsDisplay();
+
+    // Generate initial wave with random coordinates
+    randomizeWave(true, true);
+
+    // Add click event listener to the randomize button
+    document.getElementById('randomize-btn')?.addEventListener('click', () => {
+      randomizeWave(true, true); // Use random color and regenerate coords when clicking randomize
+      // Reset the timer when manually randomized
+      lastRandomizeTime = performance.now();
+    });
+
+    // Add change event listener to the wave type dropdown
+    document.getElementById('wave-type')?.addEventListener('change', () => {
+      randomizeWave(false, false); // Keep current color and don't regenerate coords when changing wave type
+      // Reset the timer when wave type is changed
+      lastRandomizeTime = performance.now();
+    });
+
+    // Add change event listener to the wave dir dropdown
+    document.getElementById('wave-dir')?.addEventListener('change', () => {
+      randomizeWave(false, false); // Keep current color and don't regenerate coords when changing wave direction
+      // Reset the timer when wave direction is changed
+      lastRandomizeTime = performance.now();
+    });
+
+    // Add input event listener to the points slider
+    document.getElementById('points-slider')?.addEventListener('input', () => {
+      updatePointsDisplay();
+      randomizeWave(false, true); // Keep current color but regenerate coords when adjusting points
+      // Reset the timer when points are changed
+      lastRandomizeTime = performance.now();
+    });
+
+    // Add change event listener to the color picker
+    document.getElementById('color-picker')?.addEventListener('input', () => {
+      // Update the wave with the selected color (don't randomize)
+      const wavePath = document.getElementById('wave-path');
+      const colorPicker = document.getElementById('color-picker');
+      if (wavePath && colorPicker) {
+        wavePath.setAttribute('fill', colorPicker.value);
+      }
+    });
+
+    // Start the animation loop
+    // requestAnimationFrame(animateWave);
+  });
+
+  /**
+   * Update the points value display
+   */
+  const updatePointsDisplay = () => {
+    const pointsSlider = document.getElementById('points-slider');
+    const pointsValue = document.getElementById('points-value');
+    if (pointsSlider && pointsValue) {
+      pointsValue.textContent = pointsSlider.value;
+    }
+  };
+</script>
